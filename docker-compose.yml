@@ -1,0 +1,98 @@
+---
+version: "3.5"
+
+networks:
+  default:
+    driver: bridge
+    name: lab
+
+services:
+  gitlab:
+    container_name: gitlab
+    environment:
+      # These settings will be evaluated on load - see
+      # https://docs.gitlab.com/omnibus/docker/#pre-configure-docker-container
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url "http://gitlab.demo.local/";
+        prometheus_monitoring['enable'] = false
+        gitlab_rails['display_initial_root_password'] = true
+        gitlab_rails['usage_ping_enabled'] = false
+    image: gitlab/gitlab-ce
+    networks:
+      default:
+        aliases:
+          - gitlab.demo.local
+    ports:
+      - "80:80"
+      - "7722:22"
+    restart: unless-stopped
+    stop_grace_period: 10m
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_data:/var/opt/gitlab
+      - gitlab_logs:/var/log/gitlab
+
+  jenkins:
+    container_name: jenkins
+    environment:
+      - JAVA_OPTS=-Dhudson.model.DirectoryBrowserSupport.CSP="sandbox allow-scripts; script-src 'unsafe-inline'; style-src 'unsafe-inline';" # Allow inline JavaScript
+      - PLUGINS_FORCE_UPGRADE=true # Enforce upgrade of native plugins at startup
+    image: jenkinsci/blueocean
+    networks:
+      default:
+        aliases:
+          - jenkins.demo.local
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    user: :900 # part of the docker group as the user needs to be able to start containers
+    volumes:
+      - jenkins_home:/var/jenkins_home:rw # Workspace home
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Allows Jenkins to stop/start containers
+
+  registry:
+    container_name: registry
+    image: registry:2
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    networks:
+      default:
+        aliases:
+          - registry.demo.local
+    volumes:
+      - registry:/var/lib/registry
+
+  sonarqube:
+    container_name: sonarqube
+    image: sonarqube:7.9-community
+    networks:
+      default:
+        aliases:
+          - sonarqube.demo.local
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
+    stop_grace_period: 10m
+    volumes:
+      - sonarqube_conf:/opt/sonarqube/conf
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_temp:/opt/sonarqube/temp
+
+volumes:
+  gitlab_config:
+  gitlab_data:
+  gitlab_logs:
+  jenkins_home:
+    name: jenkins_home
+  registry:
+  sonarqube_conf:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_temp:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
