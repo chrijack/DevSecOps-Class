@@ -197,8 +197,9 @@ pipeline {
             }
             steps {
                 script {
+                    warnError('Nikto Vulnerabilites found') {
                     // Fail stage when Nikto finds something
-                    def result = sh label: "nikto", returnStatus: true,
+                    sh label: "nikto", returnStatus: true,
                         script: """\
                             mkdir -p reports &>/dev/null
                             curl --max-time 120 \
@@ -213,10 +214,8 @@ pipeline {
                                 -output reports/nikto.html \
                                 -Plugins '@@ALL;-sitefiles' \
                                 -Tuning x7 \
-                                -host http://${JOB_BASE_NAME}-${BUILD_ID}:3000 > nikto.pl-results.txt
-                        """
-                    if (result > 0) {
-                        unstable(message: "Web server scanner issues found")
+                                -host http://${JOB_BASE_NAME}-${BUILD_ID}:3000 > nikto.pl-results.txt 
+                           """
                     }
                 }
             }
