@@ -93,7 +93,7 @@ pipeline {
         stage("Dependency-Check") {
             agent {
                 docker {
-                    image "owasp/dependency-check:5.3.0"
+                    image "owasp/dependency-check"
                     // Set user to root, as the container runs by default under 100:101
                     args '''\
                         --user 0 \
@@ -181,26 +181,8 @@ pipeline {
                     warnError('Stop Vulnerabilites found') {
                     writeFile file: 'anchore_images', text: DOCKER_IMAGE
                     anchore engineRetries: '900', name: 'anchore_images'
+                    }
                 }
-            }
-            //steps {
-                // Continue the build, even after policy failure
-              //  script {
-              //      sh label: "Ensure anchore is available",
-              //          script: "anchore-cli system status"
-              //      sh label: "Add to queue",
-              //          script: "anchore-cli image add ${DOCKER_IMAGE}:$tag"
-              //      sh label: "Wait for analysis",
-              //          script: "anchore-cli image wait ${DOCKER_IMAGE}:$tag"
-              //      sh label: "Generate list of vulnerabilities",
-              //          script: "anchore-cli image vuln $DOCKER_IMAGE:$tag all | tee anchore-results.txt"
-              //      def result = sh label: "Check policy",
-              //          script: "anchore-cli evaluate check ${DOCKER_IMAGE}:$tag --detail >> anchore-results.txt"
-              //      if (result > 0) {
-              //          unstable(message: "Policy check failed")
-              //      }
-              //  }
-            //}
             }
         }
 
