@@ -1,3 +1,9 @@
-More to come. These files will allow you to use docker-compose to start the containers in docker. This was demonstrated on Ubuntu 20.04 LTS
+More to come. These files will allow you to use docker-compose to start a DevSecOps lab in containers on your local laptop. This was built on Ubuntu 20.04 LTS
+
+This lab environment code has been forked from Peter Mosmans DevSecOps repository. https://github.com/PeterMosmans/devsecops-lab.
+
+His courses DevSecOps on Pluralsight can be found here: https://app.pluralsight.com/profile/author/peter-mosmans
+
+They are not only excellent, but will give a deepdive on how to get this code working and how to use all of the security tests.
 
 
