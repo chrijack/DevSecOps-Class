@@ -50,10 +50,10 @@ pipeline {
                         script: """\
                             detect-secrets-hook --no-verify \
                                                 -v \
-                                                --baseline .secrets.baseline.json \
                             \$(git diff-tree --no-commit-id --name-only -r ${GIT_COMMIT} | xargs -n1)
                         """,
                         returnStatus: true
+                    // command for baseline --baseline .secrets.baseline.json \
                     // Exit code 1 is generated when secrets are detected or no baseline is present
                     // Exit code 3 is generated only when .secrets.baseline.json is updated,
                     // eg. when the line numbers don't match anymore
@@ -108,7 +108,8 @@ pipeline {
             steps {
                 script {
                     // Fail stage when a vulnerability having a base CVSS score of 6 or higher is found
-                    def result = sh label: "dependency-check", returnStatus: true,
+                    warnError('Dependency check CVSS score of 6 or greater found') {
+                    sh label: "dependency-check", returnStatus: true,
                         script: """\
                             mkdir -p reports &>/dev/null
                             # Fix permissions as this container is being run as root
@@ -121,8 +122,6 @@ pipeline {
                             # Fix permissions as this container is being run as root
                             chown "${JENKINS_UID}:${JENKINS_GID}" reports/dependency-check-report.html
                         """
-                    if (result > 0) {
-                        unstable(message: "Insecure libraries found")
                     }
                 }
             }
@@ -226,15 +225,16 @@ pipeline {
                 docker {
                     image "owasp/zap2docker-weekly"
                     // Make sure that the container can access the sidecar
-                    args "--network=lab --tty --volume ${WORKSPACE}:/zap/wrk"
+                    args "-u 0 --network=lab --tty --volume ${WORKSPACE}:/zap/wrk:rw"
                     reuseNode true
                 }
             }
             steps {
                 script {
-                    def result = sh label: "OWASP ZAP", returnStatus: true,
+                    warnError('OWASP ZAP vulnerabilites found') {
+                    sh label: "OWASP ZAP", returnStatus: true,
                         script: """\
-                            mkdir -p reports &>/dev/null
+                            mkdir -p ${WORKSPACE}/reports &>/dev/null \
                             curl --max-time 120 \
                                 --retry 60 \
                                 --retry-connrefused \
@@ -247,9 +247,8 @@ pipeline {
                             -I \
                             -r reports/zapreport.html \
                             -t "http://${JOB_BASE_NAME}-${BUILD_ID}:3000"
+                            cp /zap/wrk/reports/zapreport.html /var/jenkins_home/workspace/Juice-shop_master/reports/zapreport.html
                     """
-                    if (result > 0) {
-                        unstable(message: "OWASP ZAP issues found")
                     }
                 }
             }
